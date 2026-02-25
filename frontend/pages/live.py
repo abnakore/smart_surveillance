@@ -5,6 +5,16 @@ import time
 from utils.video_utils import load_video_frames
 # from components.alert_panel import show_alerts
 
+from backend.surveillance_engine import SurveillanceEngine
+import cv2
+
+# Initialize Surveillance Engine
+if "engine" not in st.session_state:
+    st.session_state.engine = SurveillanceEngine(frame_skip=5, db_path="database")
+
+if "alerts" not in st.session_state:
+    st.session_state.alerts = []
+
 # ------------------------------
 # Constants
 # ------------------------------
@@ -59,41 +69,23 @@ if st.session_state.get("processing") and st.session_state.get("video_source"):
     # Compute scaling factor used during drawing
     scale = min(1.0, MAX_CANVAS_WIDTH / orig_w) if orig_w > 0 else 1.0
 
-    for frame in load_video_frames(video_source):
-        if not st.session_state.processing:
+    engine = st.session_state.engine
+    cap = cv2.VideoCapture(st.session_state.video_source)
+
+    while st.session_state.processing:
+        ret, frame = cap.read()
+        if not ret:
             break
 
-        # Draw active zones
-        for zone in st.session_state.rois:
-            if not zone.get("active", True):
-                continue
-            json_data = zone.get("json_data")
-            if not json_data or "objects" not in json_data:
-                continue
+        processed_frame = engine.process_frame(frame)
 
-            for obj in json_data["objects"]:
-                if obj.get("type") in ("polygon", "path"):
-                    path = obj.get("path", [])
-                    points = []
-                    for cmd in path:
-                        if len(cmd) >= 3:  # ['M', x, y] or ['L', x, y]
-                            points.append([cmd[1], cmd[2]])
-                    if not points:
-                        continue
-
-                    # Use points directly, since json_data is in original video coordinates
-                    pts = np.array(points, np.int32)
-                    pts = pts.reshape((-1, 1, 2))
-                    color = zone.get("color", (0, 255, 0))
-                    cv2.polylines(frame, [pts], isClosed=True, color=color, thickness=2)
-
-        # Convert BGR -> RGB for Streamlit
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_rgb = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
         video_placeholder.image(frame_rgb, channels="RGB", use_column_width=True)
 
-        # Control frame rate (approx. 30 FPS)
-        time.sleep(0.06)
+    cap.release()
 
+    st.session_state.processing = False
+    st.rerun()
     # Processing finished
     st.session_state.processing = False
     st.rerun()

@@ -9,7 +9,14 @@ from utils.roi_utils import  add_mock_alert, color_from_id
 import json
 from copy import deepcopy
 
+import os
+from backend.surveillance_engine import SurveillanceEngine
+
 st.subheader("Settings")
+
+# Initialize Surveillance Engine
+if "engine" not in st.session_state:
+    st.session_state.engine = SurveillanceEngine(frame_skip=5, db_path="database")
 
 # ------------------------------
 # 1. Video Source
@@ -203,14 +210,32 @@ st.divider()
 # ------------------------------
 # 3. Authorised Personnel
 # ------------------------------
+
 st.markdown("### Authorised Personnel")
-uploaded_face = st.file_uploader("Upload face image", type=["jpg", "jpeg", "png"], key="face_upload")
-if uploaded_face:
-    name = st.text_input("Name", key="auth_name")
-    if st.button("Add Person", key="add_auth"):
+
+uploaded_face = st.file_uploader("Upload face image", type=["jpg", "jpeg", "png"])
+name = st.text_input("Name")
+
+if st.button("Add Person"):
+    if uploaded_face and name:
+        person_dir = os.path.join("database", name)
+        os.makedirs(person_dir, exist_ok=True)
+
+        img_path = os.path.join(person_dir, uploaded_face.name)
+
+        with open(img_path, "wb") as f:
+            f.write(uploaded_face.read())
+
+        # Update embedding database
+        st.session_state.engine.add_new_person(name, [img_path])
+
+        # Store name and picture for confirmation
         st.session_state.authorized_faces.append({"name": name, "encoding": None})
-        st.success(f"{name} added (mock).")
+
+        st.success(f"{name} added successfully.")
         st.rerun()
+    else:
+        st.warning("Please upload an image and enter a name.")
 
 if st.session_state.authorized_faces:
     for i, person in enumerate(st.session_state.authorized_faces):

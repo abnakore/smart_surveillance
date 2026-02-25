@@ -16,3 +16,13 @@ This dashboard allows you to:
 
 Use the sidebar to navigate between the Live Stream and Settings pages.
 """)
+
+if "rois" not in st.session_state:
+    st.session_state.rois = []
+
+if "alerts" not in st.session_state:
+    st.session_state.alerts = []
+
+if "engine" not in st.session_state:
+    from backend.surveillance_engine import SurveillanceEngine
+    st.session_state.engine = SurveillanceEngine(frame_skip=5, db_path="database")

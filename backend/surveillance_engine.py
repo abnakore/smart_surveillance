@@ -178,7 +178,7 @@ class SurveillanceEngine:
                     name = self.track_status[track_id]["name"]
 
                     if status == "AUTHORIZED":
-                        label = f"{name}"
+                        label = f"{name} - {confidence}"
                         color = (0, 255, 0)
                     elif status == "INTRUDER":
                         label = "INTRUDER"
