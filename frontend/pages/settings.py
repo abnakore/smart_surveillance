@@ -19,7 +19,7 @@ source = st.radio("Select source", ["Upload video", "Webcam"], key="source_radio
 if source == "Upload video":
     uploaded_file = st.file_uploader("Choose a video file", type=["mp4", "avi", "mov", "mkv"])
     if uploaded_file:
-        temp_path = f"C:/Users/PHERMC Registrar/smart_surveillance/frontend/data/20260218_141203.mp4" #f"/tmp/{uploaded_file.name}"
+        temp_path = f"/tmp/{uploaded_file.name}"
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.read())
         st.session_state.video_source = temp_path
@@ -97,7 +97,7 @@ if st.session_state.get("video_source"):
                 stroke_width=2,
                 stroke_color=f"rgb({zone_color[2]}, {zone_color[1]}, {zone_color[0]})",
                 background_image=pil_image_resized,
-                update_streamlit=True,
+                # update_streamlit=True,
                 height=canvas_h,
                 width=canvas_w,
                 drawing_mode="polygon",
