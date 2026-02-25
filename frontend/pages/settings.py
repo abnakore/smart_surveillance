@@ -8,6 +8,8 @@ from utils.video_utils import extract_first_frame
 from utils.roi_utils import  add_mock_alert, color_from_id
 import json
 from copy import deepcopy
+import os
+from pathlib import Path
 
 st.subheader("Settings")
 
@@ -19,11 +21,23 @@ source = st.radio("Select source", ["Upload video", "Webcam"], key="source_radio
 if source == "Upload video":
     uploaded_file = st.file_uploader("Choose a video file", type=["mp4", "avi", "mov", "mkv"])
     if uploaded_file:
-        temp_path = f"/tmp/{uploaded_file.name}"
-        with open(temp_path, "wb") as f:
+        # Define the upload folder (relative to this file's location)
+        upload_dir = Path(__file__).parent.parent / "uploads"
+        upload_dir.mkdir(exist_ok=True)  # create folder if it doesn't exist
+
+        # Build a safe file path
+        file_path = upload_dir / uploaded_file.name
+
+        # Save the uploaded file
+        with open(file_path, "wb") as f:
             f.write(uploaded_file.read())
-        st.session_state.video_source = temp_path
-        st.success(f"File ready: {uploaded_file.name}")
+            
+        # temp_path = f"/tmp/{uploaded_file.name}"
+        # with open(temp_path, "wb") as f:
+        #     f.write(uploaded_file.read())
+
+        st.session_state.video_source = str(file_path)
+        st.success(f"File ready: {file_path.name}")
     else:
         st.info("Upload a video to begin.")
 else:
