@@ -199,38 +199,61 @@ else:
     st.info("Upload a video first to see the first frame and draw zones.")
 
 st.divider()
-
 # ------------------------------
 # 3. Authorised Personnel
 # ------------------------------
 st.markdown("### Authorised Personnel")
-uploaded_face = st.file_uploader("Upload face image", type=["jpg", "jpeg", "png"], key="face_upload")
-if uploaded_face:
+
+# Multi‑file uploader
+uploaded_files = st.file_uploader(
+    "Upload face images (one or more per person)",
+    type=["jpg", "jpeg", "png"],
+    accept_multiple_files=True,
+    key="face_upload"
+)
+
+if uploaded_files:
     name = st.text_input("Name", key="auth_name")
     if st.button("Add Person", key="add_auth"):
-        st.session_state.authorized_faces.append({"name": name, "encoding": None})
-        st.success(f"{name} added (mock).")
-        st.rerun()
+        if name.strip() == "":
+            st.error("Please enter a name.")
+        else:
+            # Store each uploaded image as bytes
+            image_data_list = []
+            for uploaded_file in uploaded_files:
+                # Read file bytes
+                bytes_data = uploaded_file.read()
+                image_data_list.append(bytes_data)
+            # Append to session state
+            st.session_state.authorized_faces.append({
+                "name": name,
+                "images": image_data_list  # list of image bytes
+            })
+            st.success(f"{name} added with {len(image_data_list)} image(s).")
+            st.rerun()
 
+# Display existing authorised persons
 if st.session_state.authorized_faces:
     for i, person in enumerate(st.session_state.authorized_faces):
-        col1, col2 = st.columns([4, 1])
-        col1.write(f"{person['name']}")
-        if col2.button("Remove", key=f"remove_auth_{i}"):
+        col1, col2, col3 = st.columns([3, 1, 1])
+        col1.write(f"{person['name']} ({len(person['images'])} images)")
+        # Add an expander.
+        if col2.button("View", key=f"view_{i}"):
+            # Show images in an expander
+            with st.expander(f"Images for {person['name']}"):
+                for idx, img_bytes in enumerate(person['images']):
+                    st.image(img_bytes, caption=f"Image {idx+1}", width=150)
+        if col3.button("Remove", key=f"remove_auth_{i}"):
             st.session_state.authorized_faces.pop(i)
             st.rerun()
 else:
     st.caption("No authorised persons added.")
 
 st.divider()
-
 # ------------------------------
 # 4. Mock Data
 # ------------------------------
 st.markdown("### Mock Data")
-col1, col2 = st.columns(2)
-
-with col2:
-    if st.button("Add Mock Alert"):
-        add_mock_alert()
-        # st.rerun()
+if st.button("Add Mock Alert"):
+    add_mock_alert()
+    # st.rerun()
